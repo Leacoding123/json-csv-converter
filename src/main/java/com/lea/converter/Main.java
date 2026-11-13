@@ -8,7 +8,8 @@ public class Main {
 
             System.out.println(
                     "Usage:\n" +
-                    "json2csv input.json output.csv");
+                    "json2csv input.json output.csv\n" +
+                    "csv2json input.csv output.json");
 
             return;
         }
@@ -19,14 +20,19 @@ public class Main {
 
                 Converter.jsonToCsv(args[1], args[2]);
 
-                System.out.println("Conversion successful.");
+                System.out.println("JSON to CSV conversion successful.");
+
+            } else if (args[0].equalsIgnoreCase("csv2json")) {
+
+                Converter.csvToJson(args[1], args[2]);
+
+                System.out.println("CSV to JSON conversion successful.");
 
             } else {
 
                 System.out.println("Unknown command.");
             }
-
-        } catch (Exception e) {
+            } catch (Exception e) {
 
             System.out.println("Error: " + e.getMessage());
         }
