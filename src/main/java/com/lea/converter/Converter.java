@@ -19,6 +19,7 @@ public class Converter {
 
     public static void jsonToCsv(String jsonFile, String csvFile) throws Exception {
 
+        DataValidator.validateFile(jsonFile);
         ObjectMapper mapper = new ObjectMapper();
 
         List<Map<String, Object>> data =
@@ -52,34 +53,37 @@ public class Converter {
 
     public static void csvToJson(String csvFile, String jsonFile) throws Exception {
 
-    List<Map<String, String>> jsonList = new ArrayList<>();
+        DataValidator.validateFile(csvFile);
 
-    try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
+        List<Map<String, String>> jsonList = new ArrayList<>();
 
-        List<String[]> rows = reader.readAll();
+        try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
 
-        if (rows.isEmpty()) {
-            System.out.println("CSV file is empty.");
-            return;
-        }
+            List<String[]> rows = reader.readAll();
+            DataValidator.validateCsvRows(rows);
 
-        String[] headers = rows.get(0);
-
-        for (int i = 1; i < rows.size(); i++) {
-
-            Map<String, String> record = new LinkedHashMap<>();
-
-            for (int j = 0; j < headers.length; j++) {
-                record.put(headers[j], rows.get(i)[j]);
+            if (rows.isEmpty()) {
+                System.out.println("CSV file is empty.");
+                return;
             }
 
-            jsonList.add(record);
+            String[] headers = rows.get(0);
+
+            for (int i = 1; i < rows.size(); i++) {
+
+                Map<String, String> record = new LinkedHashMap<>();
+
+                for (int j = 0; j < headers.length; j++) {
+                    record.put(headers[j], rows.get(i)[j]);
+                }
+
+                jsonList.add(record);
+            }
         }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper.writerWithDefaultPrettyPrinter()
+                .writeValue(new File(jsonFile), jsonList);
     }
-
-    ObjectMapper mapper = new ObjectMapper();
-
-    mapper.writerWithDefaultPrettyPrinter()
-            .writeValue(new File(jsonFile), jsonList);
-}
 }
