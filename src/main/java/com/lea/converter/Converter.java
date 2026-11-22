@@ -15,75 +15,113 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import java.util.logging.Logger;
+import java.util.logging.Level;
+
 public class Converter {
+
+    private static final Logger LOGGER =
+        Logger.getLogger(Converter.class.getName());
 
     public static void jsonToCsv(String jsonFile, String csvFile) throws Exception {
 
-        DataValidator.validateFile(jsonFile);
-        ObjectMapper mapper = new ObjectMapper();
+        try {
 
-        List<Map<String, Object>> data =
-                mapper.readValue(
-                        new File(jsonFile),
-                        new TypeReference<List<Map<String, Object>>>() {}
-                );
+            DataValidator.validateFile(jsonFile);
+            ObjectMapper mapper = new ObjectMapper();
 
-        if (data.isEmpty()) {
-            System.out.println("JSON file is empty.");
-            return;
-        }
+            LOGGER.fine("Starting JSON to CSV conversion: " + jsonFile);
 
-        try (CSVWriter writer = new CSVWriter(new FileWriter(csvFile))) {
+            List<Map<String, Object>> data =
+                    mapper.readValue(
+                            new File(jsonFile),
+                            new TypeReference<List<Map<String, Object>>>() {}
+                    );
+                    
+            LOGGER.info("Loaded " + data.size() + " records from JSON file");
 
-            String[] headers =
-                    data.get(0).keySet().toArray(new String[0]);
-
-            writer.writeNext(headers);
-
-            for (Map<String, Object> row : data) {
-
-                String[] values = Arrays.stream(headers)
-                        .map(header -> String.valueOf(row.get(header)))
-                        .toArray(String[]::new);
-
-                writer.writeNext(values);
+            if (data.isEmpty()) {
+                LOGGER.warning("JSON file is empty");
+                return;
             }
+
+            try (CSVWriter writer = new CSVWriter(new FileWriter(csvFile))) {
+
+                String[] headers =
+                        data.get(0).keySet().toArray(new String[0]);
+
+                writer.writeNext(headers);
+
+                for (Map<String, Object> row : data) {
+
+                    String[] values = Arrays.stream(headers)
+                            .map(header -> String.valueOf(row.get(header)))
+                            .toArray(String[]::new);
+
+                    writer.writeNext(values);
+                }
+            }
+            LOGGER.info("Successfully converted JSON to CSV: " + csvFile);
+
+        } catch (Exception e) {
+            LOGGER.log(
+                Level.SEVERE,
+                "JSON to CSV conversion failed",
+                e
+            );
+
+            throw e; 
         }
     } 
 
     public static void csvToJson(String csvFile, String jsonFile) throws Exception {
 
-        DataValidator.validateFile(csvFile);
+        try { 
+            DataValidator.validateFile(csvFile);
+            LOGGER.fine("Starting CSV to JSON conversion: " + csvFile);
 
-        List<Map<String, String>> jsonList = new ArrayList<>();
+            List<Map<String, String>> jsonList = new ArrayList<>();
 
-        try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
+            try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
 
-            List<String[]> rows = reader.readAll();
-            DataValidator.validateCsvRows(rows);
+                List<String[]> rows = reader.readAll();
+                LOGGER.info("Read " + rows.size() + " rows from CSV file");
+                DataValidator.validateCsvRows(rows);
 
-            if (rows.isEmpty()) {
-                System.out.println("CSV file is empty.");
-                return;
-            }
-
-            String[] headers = rows.get(0);
-
-            for (int i = 1; i < rows.size(); i++) {
-
-                Map<String, String> record = new LinkedHashMap<>();
-
-                for (int j = 0; j < headers.length; j++) {
-                    record.put(headers[j], rows.get(i)[j]);
+                if (rows.isEmpty()) {
+                    LOGGER.warning("CSV file is empty");
+                    return;
                 }
 
-                jsonList.add(record);
+                String[] headers = rows.get(0);
+
+                for (int i = 1; i < rows.size(); i++) {
+
+                    Map<String, String> record = new LinkedHashMap<>();
+
+                    for (int j = 0; j < headers.length; j++) {
+                        record.put(headers[j], rows.get(i)[j]);
+                    }
+
+                    jsonList.add(record);
+                }
             }
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            mapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(new File(jsonFile), jsonList);
+            LOGGER.info("Successfully converted CSV to JSON: " + jsonFile);
+
+        } catch (Exception e) {
+
+            LOGGER.log(
+                    Level.SEVERE,
+                    "CSV to JSON conversion failed",
+                    e
+            );
+
+            throw e;
         }
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        mapper.writerWithDefaultPrettyPrinter()
-                .writeValue(new File(jsonFile), jsonList);
     }
 }
